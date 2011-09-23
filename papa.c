@@ -66,15 +66,17 @@ int nmea_process(uint8_t *d, int count) {
 		}
 		int start = nmea_msg_symbol(NMEA_SYMBOL_START, d, end);
 		while(1) {
-			if( start == -1)
+			if( start == -1 || end - start < 10 )
 				break;
-			// check start and end difference here!! check for <CR> symbol here	
+			//@TODO check start and end difference here!! check for <CR> symbol here
 			// $XXXYY*CS<CR><LF>
-				
+			// 0123456789	0
 			d += start + 1;
 			end -= start + 1;
 			
 			int checksum = nmea_msg_symbol(NMEA_SYMBOL_CHECKSUM, d, end);
+
+			// Difference between checksum and message end is 4 bytes.
 			if( checksum == -1 || end - checksum != 4 )
 				break;
 			uint16_t cs1 = nmea_checksum(d, checksum);	
@@ -136,7 +138,8 @@ void init() {
 		case 6: stepnum  = 384; break;
 		default: stepnum =  12; break; // TODO: default values
 	}
-	stepnum = 384; // @TODO: delete
+	stepnum = 384;
+	//@TODO delete
 	steps_per_degr = stepnum;
 	steps_per_circle = stepnum * DEGR_MAX;
 	
@@ -218,7 +221,7 @@ void degr_sub(degree n1, degree n2, degree *r) {
 	r->frac = n1.frac - n2.frac;
 	r->i = 0;
 	
-	// normalize values
+	// Normalise values
 	if(r->frac < 0) {
 		r->frac = r->denom + r->frac;
 		r->i--;
