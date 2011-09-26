@@ -120,12 +120,12 @@ int nmea_field_process(uint8_t *d, int count) {
 	return i - 1;
 }
 
-bool nmea_msg_hdr_cmp(uint8_t *d, uint8_t *cmp, int count) {
+int nmea_msg_hdr_cmp(uint8_t *d, uint8_t *cmp, int count) {
 	for(int i = 0; i < count; i++ ){
 		if(d[i] != cmp[i])
-			return false;
+			return 0;
 	}
-	return true;
+	return 1;
 }
 
 void nmea_msg_process_hdt(uint8_t *d, int count) {
@@ -140,7 +140,7 @@ void nmea_msg_process_hdt(uint8_t *d, int count) {
 
 	nmea_msg_ansi_to_degr(d, f_degr, &degr);
 
-	int f_true = nmea_field_process(d += count + 1, count -= degr_field + 1);
+	int f_true = nmea_field_process(d += count + 1, count -= f_degr + 1);
 }
 
 // input is in brackets: $[*d]*XX<CR><ENDL>
@@ -181,8 +181,6 @@ int nmea_process(uint8_t *d, int count) {
 				break;
 
 			// Checksum checking
-			uint16_t cs1 = nmea_checksum(d, checksum);
-			uint16_t cs2 = nmea_msg_hex_to_byte(d+checksum+1);
 			if( ((int16_t)nmea_checksum(d, checksum)) != nmea_msg_hex_to_byte(d+checksum+1) )
 				break;
 
