@@ -105,7 +105,10 @@ void nmea_msg_process_hdt(uint8_t *d, int count) {
 	if(f_degr == -1)
 		return;
 
-	nmea_msg_ansi_to_degr(d + 1, f_degr, &global_degr);
+	degree degr;
+	nmea_msg_ansi_to_degr(d + 1, f_degr, &degr);
+
+	global_degr_update(degr);
 
 	int f_true = nmea_field_process(d += count + 1, count -= f_degr + 1);
 }
