@@ -63,7 +63,7 @@ int nmea_field_process(uint8_t *d, int count) {
 	int i = 0;
 	while(d[i] != NMEA_SYMBOL_FIELD_SEP && i < count)
 		i++;
-	return i - 1;
+	return i;
 }
 
 int nmea_msg_hdr_cmp(uint8_t *d, const char *cmp, int count) {
@@ -84,7 +84,7 @@ void nmea_msg_process_hdt(uint8_t *d, int count) {
 
 	degree degr;
 
-	nmea_msg_ansi_to_degr(d, f_degr, &degr_temp);
+	nmea_msg_ansi_to_degr(d + 1, f_degr, &degr_temp);
 
 	int f_true = nmea_field_process(d += count + 1, count -= f_degr + 1);
 }
