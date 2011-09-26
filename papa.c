@@ -58,27 +58,29 @@ void init() {
 	set_sleep_mode(SLEEP_MODE_IDLE);
 }
 
-degree global_degr;
 int global_degr_first = 1;
 
+degree global_degr;
+int32_t global_current_step;
+
 void global_degr_update(degree next) {
-	if(global_degr_first) {
+	int32_t next_steps = degr_to_step(next);
+
+	if(!global_degr_first) {
+		int32_t diff_steps_one = next_steps - global_current_step;
+		int32_t diff_steps_two = diff_steps_one - steps_per_circle;
+
+		int32_t diff_steps = (diff_steps_one < diff_steps_two ? diff_steps_one : diff_steps_two);
+
+		ATOMIC_BLOCK(ATOMIC_FORCEON)
+		{
+			motor_dir += diff_steps;
+		}
+	} else {
 		global_degr_first = 0;
-		memcpy(&global_degr, &next, sizeof(degree));
-		return;
 	}
 
-	degree diff_degr;
-
-	degr_sub(next, global_degr, &diff_degr);
-	int32_t diff_steps = degr_to_step(diff_degr);
-
-	ATOMIC_BLOCK(ATOMIC_FORCEON)
-	{
-		motor_dir += diff_steps;
-	}
-
-	memcpy(&global_degr, &next, sizeof(degree));
+	global_current_step = next_steps;
 }
 
 
