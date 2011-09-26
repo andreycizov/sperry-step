@@ -106,6 +106,7 @@ void nmea_msg_process_hdt(uint8_t *d, int count) {
 		return;
 
 	degree degr;
+	degr.denom = 1;
 	nmea_msg_ansi_to_degr(d + 1, f_degr, &degr);
 
 	global_degr_update(degr);
