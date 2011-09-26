@@ -72,7 +72,7 @@ void global_degr_update(degree next) {
 	degr_sub(global_degr, next, &diff_degr);
 	uint32_t diff_steps = degr_to_step(diff_degr);
 
-	memcpy(&global_degr, next, sizeof(degree));
+	memcpy(&global_degr, &next, sizeof(degree));
 }
 
 
