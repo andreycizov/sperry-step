@@ -17,7 +17,8 @@ int nmea_msg_atoi_size(uint8_t *d, int count) {
 }
 
 uint32_t nmea_msg_atoi(uint8_t *d, int count) {
-	uint32_t mul = 10;
+	uint32_t mul = 1
+	;
 	uint32_t r = 0;
 	for(int i = count - 1; i >= 0; i-- ) {
 		r += (d[i] - NMEA_SYMBOL_0) * mul;
@@ -173,6 +174,7 @@ int main(void)
 	}
 	return 0;
  }
+
 
 
 
