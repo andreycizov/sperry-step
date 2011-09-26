@@ -111,7 +111,7 @@ int nmea_msg_symbol(uint8_t symbol, uint8_t *d, int count) {
 }
 
 int nmea_field_process(uint8_t *d, int count) {
-	if(count == 0 || &d != NMEA_SYMBOL_FIELD_SEP)
+	if(count == 0 || *d != NMEA_SYMBOL_FIELD_SEP)
 		return -1;
 	d++;
 	int i = 0;
@@ -130,7 +130,7 @@ int nmea_msg_hdr_cmp(uint8_t *d, uint8_t *cmp, int count) {
 
 void nmea_msg_process_hdt(uint8_t *d, int count) {
 	if(count == 0)
-		return -1;
+		return;
 
 	int f_degr = nmea_field_process(d, count);
 	if(f_degr == -1)
@@ -149,7 +149,8 @@ void nmea_msg_process(uint8_t *d, int count) {
 	uint8_t *body = d + 5;
 	int body_size = count - 5;
 
-	if(nmea_msg_hdr_cmp(hdr, NMEA_MSG_HDR_HDT, NMEA_MSG_HDR_SIZE))
+	uint8_t hdt[] = NMEA_MSG_HDR_HDT;
+	if(nmea_msg_hdr_cmp(hdr, hdt, NMEA_MSG_HDR_SIZE))
 		nmea_msg_process_hdt(body, body_size);
 }
 
