@@ -2,10 +2,14 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
+#include "degree.h"
+
+degree degr_temp;
+
 #include "usart.h"
 #include "nmea.h"
 #include "motor.h"
-#include "degree.h"
+
 
 #ifndef F_CPU
 //define CPU clock speed if not defined
