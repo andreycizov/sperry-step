@@ -3,6 +3,7 @@
 #include <avr/sleep.h>
 
 #include "degree.h"
+degree degr_temp;
 #include "nmea.h"
 int nmea_msg_atoi_size(uint8_t *d, int count) {
 	int size = 0;
