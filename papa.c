@@ -15,6 +15,8 @@
 #define STEPS_MUL 2
 
 #define STEP_TIMER_PRESCALER 64
+#define STEP_TIMER_DEGR_PER_SECOND 5
+
 #define MSG_TIMER_PRESACLER 1024
 #define MSG_TIMER_SECONDS 2
 #define MSG_TIMER_CTC F_CPU/MSG_TIMER_PRESCALER/MSG_TIMER_SECONDS
@@ -49,7 +51,7 @@ void init() {
 	}
 
 	usart_init(baudrate);
-	motor_init((F_CPU*2)/STEP_TIMER_PRESCALER/stepnum/degr_sec);
+	motor_init((F_CPU*STEPS_MUL)/STEP_TIMER_PRESCALER/stepnum/STEP_TIMER_DEGR_PER_SECOND);
 
 	sei(); //  Enable global interrupts
 	set_sleep_mode(SLEEP_MODE_IDLE);
