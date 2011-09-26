@@ -56,7 +56,38 @@ int nmea_msg_ansi_to_degr(uint8_t *d, int count, degree *r) {
 
 	return size_i + size_frac;
 }
+int nmea_field_process(uint8_t *d, int count) {
+	if(count == 0 || *d != NMEA_SYMBOL_FIELD_SEP)
+		return -1;
+	d++;
+	int i = 0;
+	while(d[i] != NMEA_SYMBOL_FIELD_SEP && i < count)
+		i++;
+	return i - 1;
+}
 
+int nmea_msg_hdr_cmp(uint8_t *d, const char *cmp, int count) {
+	for(int i = 0; i < count; i++ ){
+		if(d[i] != cmp[i])
+			return 0;
+	}
+	return 1;
+}
+
+void nmea_msg_process_hdt(uint8_t *d, int count) {
+	if(count == 0)
+		return;
+
+	int f_degr = nmea_field_process(d, count);
+	if(f_degr == -1)
+		return;
+
+	degree degr;
+
+	nmea_msg_ansi_to_degr(d, f_degr, &degr_temp);
+
+	int f_true = nmea_field_process(d += count + 1, count -= f_degr + 1);
+}
 #include "usart.h"
 
 #include "motor.h"
