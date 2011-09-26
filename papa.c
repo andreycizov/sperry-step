@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <util/atomic.h>
 
 #include "degree.h"
 #include "motor.h"
@@ -71,6 +72,11 @@ void global_degr_update(degree next) {
 
 	degr_sub(next, global_degr, &diff_degr);
 	int32_t diff_steps = degr_to_step(diff_degr);
+
+	ATOMIC_BLOCK(ATOMIC_FORCEON)
+	{
+		motor_dir += diff_steps;
+	}
 
 	memcpy(&global_degr, &next, sizeof(degree));
 }
