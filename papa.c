@@ -62,6 +62,7 @@ int global_degr_first = 1;
 
 void global_degr_update(degree next) {
 	if(global_degr_first) {
+		global_degr_first = 0;
 		memcpy(&global_degr, &next, sizeof(degree));
 		return;
 	}
