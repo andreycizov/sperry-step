@@ -138,7 +138,7 @@ void nmea_msg_process_hdt(uint8_t *d, int count) {
 
 	degree degr;
 
-	nmea_msg_ansi_to_degr(d, f_degr, &degr);
+	nmea_msg_ansi_to_degr(d, f_degr, &degr_temp);
 
 	int f_true = nmea_field_process(d += count + 1, count -= f_degr + 1);
 }
