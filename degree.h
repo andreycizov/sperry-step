@@ -1,4 +1,10 @@
+#ifndef _DEGREE_H_
+#define _DEGREE_H_
+
 #define DEGR_MAX 360
+
+uint32_t steps_per_degr = 0;
+uint32_t steps_per_circle = 0;
 
 typedef struct degree {
 	int16_t i;
@@ -35,3 +41,5 @@ uint32_t degr_to_step(degree d) {
 	uint32_t steps_f = (d.frac * steps_per_degr) / d.denom;
 	return (steps_i + steps_f) >> 1;
 }
+
+#endif
