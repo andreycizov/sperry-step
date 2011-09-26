@@ -40,57 +40,7 @@ int16_t nmea_msg_hex_to_byte(uint8_t *d) {
 	return (int16_t)r;
 }
 
-int nmea_msg_atoi_size(uint8_t *d, int count) {
-	int size = 0;
-	for(int i = 0;
-	  d[i] != NMEA_SYMBOL_POINT_SEP &&
-	  NMEA_SYMBOL_IS_DECIMAL(d[i]) &&
-	  i < count; i++){
-		size++;
-	}
-	return size;
-}
 
-uint32_t nmea_msg_atoi(uint8_t *d, int count) {
-	uint32_t mul = 10;
-	uint32_t r = 0;
-	for(int i = count - 1; i >= 0; i-- ) {
-		r += (d[i] - NMEA_SYMBOL_0) * mul;
-		mul *= 10;
-	}
-	return r;
-}
-
-int nmea_msg_ansi_to_degr(uint8_t *d, int count, degree *r) {
-	if(count == 0)
-		return -1;
-	int size_i = nmea_msg_atoi_size(d, count);
-
-	if(size_i == 0)
-		return -1;
-
-	r->i = nmea_msg_atoi(d, size_i);
-	r->frac = 0;
-	r->denom = 1;
-
-	count -= size_i;
-
-	if(count == 0)
-		return size_i;
-
-	if(d[0] != NMEA_SYMBOL_POINT_SEP)
-		return -1;
-
-	d++;
-	count -= 1;
-
-	int size_frac = nmea_msg_atoi_size(d, count);
-
-	r->frac = nmea_msg_atoi(d, size_frac);
-	r->denom = size_frac > 0?size_frac:1;
-
-	return size_i + size_frac;
-}
 
 uint8_t nmea_checksum(uint8_t *d, int length) {
 	uint8_t cs = 0;
