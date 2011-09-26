@@ -5,15 +5,13 @@
 #include "usart.h"
 #include "nmea.h"
 #include "motor.h"
+#include "degree.h"
 
 #ifndef F_CPU
 //define CPU clock speed if not defined
 #define F_CPU 4000000
 #endif
 
-
-uint32_t steps_per_degr = 0;
-uint32_t steps_per_circle = 0;
 #define STEPS_MUL 2
 
 #define STEP_TIMER_PRESCALER 64
