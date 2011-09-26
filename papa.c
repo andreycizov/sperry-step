@@ -3,10 +3,9 @@
 #include <avr/sleep.h>
 
 #include "degree.h"
-degree global_degr;
+#include "motor.h"
 #include "nmea.h"
 #include "usart.h"
-#include "motor.h"
 
 #ifndef F_CPU
 //define CPU clock speed if not defined
@@ -58,7 +57,22 @@ void init() {
 	set_sleep_mode(SLEEP_MODE_IDLE);
 }
 
+degree global_degr;
+int global_degr_first = 1;
 
+void global_degr_update(degree next) {
+	if(global_degr_first) {
+		memcpy(&global_degr, &next, sizeof(degree));
+		return;
+	}
+
+	degree diff_degr;
+
+	degr_sub(global_degr, next, &diff_degr);
+	uint32_t diff_steps = degr_to_step(diff_degr);
+
+	memcpy(&global_degr, next, sizeof(degree));
+}
 
 
 #define MSG_BUFFER_SIZE (5)
