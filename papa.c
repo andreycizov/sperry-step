@@ -17,7 +17,7 @@ int nmea_msg_atoi_size(uint8_t *d, int count) {
 }
 
 uint32_t nmea_msg_atoi(uint8_t *d, int count) {
-	uint32_t mul = 10;
+	uint32_t mul = 1;
 	;
 	uint32_t r = 0;
 	for(int i = count - 1; i >= 0; i-- ) {
@@ -44,6 +44,8 @@ int nmea_msg_ansi_to_degr(uint8_t *d, int count, degree *r) {
 	if(count == 0)
 		return size_i;
 
+	d += size_i;
+
 	if(d[0] != NMEA_SYMBOL_POINT_SEP)
 		return -1;
 
@@ -53,7 +55,10 @@ int nmea_msg_ansi_to_degr(uint8_t *d, int count, degree *r) {
 	int size_frac = nmea_msg_atoi_size(d, count);
 
 	r->frac = nmea_msg_atoi(d, size_frac);
-	r->denom = size_frac > 0?size_frac:1;
+	r->denom = 1;
+	for(int i=0; i<size_frac; i++)
+		r->denom *= 10;
+		
 
 	return size_i + size_frac;
 }
@@ -97,7 +102,7 @@ int16_t nmea_msg_hex_to_byte(uint8_t *d) {
 		if(NMEA_SYMBOL_IS_DECIMAL(*d)) { // *d in [0..9]
 			r+= ((*d - NMEA_SYMBOL_0) << i);
 		} else if (*d >= NMEA_SYMBOL_A && *d <= NMEA_SYMBOL_F) { // *d in [A..F]
-			r+= ((*d - NMEA_SYMBOL_A) << i);
+			r+= ((*d - NMEA_SYMBOL_A + 10) << i);
 		} else {
 			return -1;
 		}
@@ -164,9 +169,11 @@ int nmea_process(uint8_t *d, int count) {
 			// it's length is equal to checksum index
 			if( checksum == -1 || end - checksum != 4 || checksum < 5 )
 				break;
-
+         int16_t cs1 = nmea_checksum(d, checksum);
+         int16_t cs2 =  nmea_msg_hex_to_byte(d+checksum+1);
 			// Checksum checking
-			if( ((int16_t)nmea_checksum(d, checksum)) != nmea_msg_hex_to_byte(d+checksum+1) )
+			if( ((int16_t)nmea_checksum(d, checksum)) != nmea_msg_hex_to_byte(d+checksum+1
+			) )
 				break;
 
 			// The message is OK, receive it.
@@ -266,6 +273,7 @@ int main(void)
 	}
 	return 0;
  }
+
 
 
 
