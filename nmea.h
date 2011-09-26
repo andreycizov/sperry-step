@@ -120,7 +120,7 @@ int nmea_field_process(uint8_t *d, int count) {
 	return i - 1;
 }
 
-int nmea_msg_hdr_cmp(uint8_t *d, uint8_t *cmp, int count) {
+int nmea_msg_hdr_cmp(uint8_t *d, const char *cmp, int count) {
 	for(int i = 0; i < count; i++ ){
 		if(d[i] != cmp[i])
 			return 0;
@@ -149,8 +149,7 @@ void nmea_msg_process(uint8_t *d, int count) {
 	uint8_t *body = d + 5;
 	int body_size = count - 5;
 
-	uint8_t hdt[] = NMEA_MSG_HDR_HDT;
-	if(nmea_msg_hdr_cmp(hdr, hdt, NMEA_MSG_HDR_SIZE))
+	if(nmea_msg_hdr_cmp(hdr, NMEA_MSG_HDR_HDT, NMEA_MSG_HDR_SIZE))
 		nmea_msg_process_hdt(body, body_size);
 }
 
