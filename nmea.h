@@ -16,7 +16,7 @@
 #define NMEA_SYMBOL_IS_DECIMAL(s) (s >= NMEA_SYMBOL_0 && s <= NMEA_SYMBOL_9)
 
 #define NMEA_MSG_HDR_SIZE 3
-#define NMEA_MSG_HDR_HDT 'HDT'
+const char NMEA_MSG_HDR_HDT[] = "HDT";
 
 uint8_t nmea_input_buffer[NMEA_INPUT_BUFFER_SIZE];
 int nmea_input_buffer_i = 0;
