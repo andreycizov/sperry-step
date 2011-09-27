@@ -64,10 +64,11 @@ void init() {
 
 ISR(TIMER0_COMP_vect)
 {
-	if(msg_timer_ctr == msg_timer_max)
-		PORTA |= MSG_TIMER_BIT;
-
 	msg_timer_ctr++;
+	if(msg_timer_ctr > msg_timer_max) {
+		PORTA |= MSG_TIMER_BIT;
+		msg_timer_ctr = 0;
+	}
 }
 
 void msg_timer_init(uint32_t ocr0) {
