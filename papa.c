@@ -3,15 +3,15 @@
 #include <avr/sleep.h>
 #include <util/atomic.h>
 
-#include "degree.h"
-#include "motor.h"
-#include "nmea.h"
-#include "usart.h"
-
 #ifndef F_CPU
 //define CPU clock speed if not defined
 #define F_CPU 4000000
 #endif
+
+#include "degree.h"
+#include "motor.h"
+#include "nmea.h"
+#include "usart.h"
 
 #define STEPS_MUL 2
 
@@ -20,8 +20,11 @@
 
 #define MSG_TIMER_PRESACLER 1024
 #define MSG_TIMER_SECONDS 2
-#define MSG_TIMER_CTC F_CPU/MSG_TIMER_PRESCALER/MSG_TIMER_SECONDS
-#define MSG_TIMER_CTC2 16
+#define MSG_TIMER_CTC F_CPU/MSG_TIMER_PRESCALER
+#define MSG_TIMER_BIT 128
+
+int msg_timer_ctr = 0;
+int msg_timer_max = 0;
 
 void init() {
 	DDRA = 0x00;
@@ -53,10 +56,29 @@ void init() {
 
 	usart_init(baudrate);
 	motor_init((F_CPU*STEPS_MUL)/STEP_TIMER_PRESCALER/stepnum/STEP_TIMER_DEGR_PER_SECOND);
+	msg_timer_init(F_CPU/MSG_TIMER_PRESCALER*MSG_TIMER_SECONDS);
 
 	sei(); //  Enable global interrupts
 	set_sleep_mode(SLEEP_MODE_IDLE);
 }
+
+ISR(TIMER0_COMP_vect)
+{
+	if(msg_timer_ctr == msg_timer_max)
+		PORTA |= MSG_TIMER_BIT;
+
+	msg_timer_ctr++;
+}
+
+void msg_timer_init(uint32_t ocr0) {
+	if(ocr0 > 255) 	{
+		msg_timer_max = ocr0 / 255;
+	}
+	OCR0 = 255;
+	TIMSK |= (1 << TOIE0);
+	TCCR0 |= ((1 << CS00) | (0 << CS01) | (1 << CS02)); // Start timer at Fcpu/64
+}
+
 
 int global_degr_first = 1;
 
@@ -75,6 +97,7 @@ void global_degr_update(degree next) {
 		ATOMIC_BLOCK(ATOMIC_FORCEON)
 		{
 			motor_dir += diff_steps;
+			PORTA &= (~MSG_TIMER_BIT);
 		}
 	} else {
 		global_degr_first = 0;
