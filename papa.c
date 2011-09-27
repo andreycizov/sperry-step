@@ -68,9 +68,9 @@ void global_degr_update(degree next) {
 
 	if(!global_degr_first) {
 		int32_t diff_steps_one = next_steps - global_current_step;
-		int32_t diff_steps_two = diff_steps_one - steps_per_circle;
+		int32_t diff_steps_two = steps_per_circle - diff_steps_one;
 
-		int32_t diff_steps = (diff_steps_one < diff_steps_two ? diff_steps_one : diff_steps_two);
+		int32_t diff_steps = (diff_steps_one < diff_steps_two ? diff_steps_one : - diff_steps_two);
 
 		ATOMIC_BLOCK(ATOMIC_FORCEON)
 		{
@@ -111,6 +111,7 @@ int main(void)
 	}
 	return 0;
  }
+
 
 
 
