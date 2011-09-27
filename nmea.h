@@ -26,7 +26,6 @@ int nmea_received_messages = 0;
 int nmea_msg_atoi_size(uint8_t *d, int count) {
 	int size = 0;
 	for(int i = 0;
-	  d[i] != NMEA_SYMBOL_POINT_SEP &&
 	  NMEA_SYMBOL_IS_DECIMAL(d[i]) &&
 	  i < count; i++){
 		size++;
@@ -106,7 +105,10 @@ void nmea_msg_process_hdt(uint8_t *d, int count) {
 		return;
 
 	degree degr;
-	nmea_msg_ansi_to_degr(d + 1, f_degr, &degr);
+	int degr_size = nmea_msg_ansi_to_degr(d + 1, f_degr, &degr);
+
+	if(degr_size != f_degr)
+		return;
 
 	global_degr_update(degr);
 
