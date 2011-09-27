@@ -75,8 +75,8 @@ int nmea_msg_ansi_to_degr(uint8_t *d, int count, degree *r) {
 	r->denom = 1;
 	for(int i = 0; i < size_frac; i++ )
 		r->denom *= 10;
-
-	return size_i + size_frac;
+	// Integer + Fraction + Point
+	return size_i + size_frac + 1;
 }
 int nmea_field_process(uint8_t *d, int count) {
 	if(count == 0 || *d != NMEA_SYMBOL_FIELD_SEP)
