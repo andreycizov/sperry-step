@@ -58,6 +58,9 @@ void init() {
 	motor_init((F_CPU*STEPS_MUL)/STEP_TIMER_PRESCALER/stepnum/STEP_TIMER_DEGR_PER_SECOND);
 	msg_timer_init(F_CPU/MSG_TIMER_PRESCALER*MSG_TIMER_SECONDS);
 
+	// Enable no-message flag;
+	PORTA |= MSG_TIMER_BIT;
+
 	sei(); //  Enable global interrupts
 	set_sleep_mode(SLEEP_MODE_IDLE);
 }
