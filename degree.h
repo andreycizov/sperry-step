@@ -7,9 +7,9 @@ uint32_t steps_per_degr = 0;
 uint32_t steps_per_circle = 0;
 
 typedef struct degree {
-	int16_t i;
-	int8_t frac;
-	int8_t denom;
+	int32_t i;
+	int32_t frac;
+	int32_t denom;
 } degree;
 
 void degr_sub(degree n1, degree n2, degree *r) {
