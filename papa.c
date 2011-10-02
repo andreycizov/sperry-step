@@ -69,7 +69,7 @@ ISR(TIMER0_COMP_vect)
 {
 	msg_timer_ctr++;
 	if(msg_timer_ctr > msg_timer_max) {
-		PORTA |= MSG_TIMER_BIT;
+		PORTA &= (~MSG_TIMER_BIT);
 		msg_timer_ctr = 0;
 	}
 }
@@ -101,7 +101,7 @@ void global_degr_update(degree next) {
 			motor_dir += diff_steps;
 
 			// Reset the flag.
-			PORTA &= (~MSG_TIMER_BIT);
+			PORTA |= MSG_TIMER_BIT;
 			msg_timer_ctr = 0;
 		}
 	} else {
@@ -112,27 +112,15 @@ void global_degr_update(degree next) {
 }
 
 
-#define MSG_BUFFER_SIZE (5)
+#define MSG_BUFFER_SIZE (16)
 uint8_t msg_buffer[MSG_BUFFER_SIZE];
 
 int main(void)
 {
 	init();
 	
-	degree a = {255,10,100},
-	b = {150,10,100},
-	d = {1, 4,10},c, e,f,g;
-	degr_sub(a,b, &c);
-	degr_sub(a,d,&e);
-	degr_sub(d,a,&f);
-	degr_sub(b,a,&g);
-	uint32_t st = degr_to_step(d);
-	
-	//PORTC = 0xff;
 	while(1){	
 		int l = usart_read(msg_buffer, MSG_BUFFER_SIZE);
-	   //usart_read_block(msg_buffer, MSG_BUFFER_SIZE);
-//	   TCNT1 = 0;
 		if(l > 0) {
 			nmea_read(msg_buffer, l);
 		}
