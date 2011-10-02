@@ -27,7 +27,7 @@ int msg_timer_ctr = 0;
 int msg_timer_max = 0;
 
 void init() {
-	DDRA = 0x00;
+	DDRA = 0x80;
 	DDRB = 0x00;
 	DDRC = 0xFF;
 	uint32_t stepnum = PORTA & 7;
@@ -58,24 +58,26 @@ void init() {
 	motor_init((F_CPU*STEPS_MUL)/STEP_TIMER_PRESCALER/stepnum/STEP_TIMER_DEGR_PER_SECOND);
 	msg_timer_init(F_CPU/MSG_TIMER_PRESCALER*MSG_TIMER_SECONDS);
 
+	// Enable no-message flag;
+	PORTA |= MSG_TIMER_BIT;
+
 	sei(); //  Enable global interrupts
 	set_sleep_mode(SLEEP_MODE_IDLE);
 }
 
 ISR(TIMER0_COMP_vect)
 {
-	if(msg_timer_ctr == msg_timer_max)
-		PORTA |= MSG_TIMER_BIT;
-
 	msg_timer_ctr++;
+	if(msg_timer_ctr > msg_timer_max) {
+		PORTA |= MSG_TIMER_BIT;
+		msg_timer_ctr = 0;
+	}
 }
 
 void msg_timer_init(uint32_t ocr0) {
-	if(ocr0 > 255) 	{
-		msg_timer_max = ocr0 / 255;
-	}
+	msg_timer_max = ocr0 / 255;
 	OCR0 = 255;
-	TIMSK |= (1 << TOIE0);
+	TIMSK |= (1 << OCIE0);
 	TCCR0 |= ((1 << CS00) | (0 << CS01) | (1 << CS02)); // Start timer at Fcpu/64
 }
 
@@ -97,7 +99,10 @@ void global_degr_update(degree next) {
 		ATOMIC_BLOCK(ATOMIC_FORCEON)
 		{
 			motor_dir += diff_steps;
+
+			// Reset the flag.
 			PORTA &= (~MSG_TIMER_BIT);
+			msg_timer_ctr = 0;
 		}
 	} else {
 		global_degr_first = 0;
