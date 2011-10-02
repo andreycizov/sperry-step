@@ -1,8 +1,5 @@
 #include <util/atomic.h>
 
-#ifndef F_CPU
-#define F_CPU 4000000
-#endif
 #define USART_INPUT_BUFFER_SIZE 128
 #define USART_INPUT_BUFFER_MASK (USART_INPUT_BUFFER_SIZE-1)
 uint8_t usart_input_buffer[USART_INPUT_BUFFER_SIZE];
