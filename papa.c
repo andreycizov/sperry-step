@@ -30,8 +30,8 @@ void init() {
 	DDRA = 0x80;
 	DDRB = 0x00;
 	DDRC = 0xFF;
-	uint32_t stepnum = 4;//PINA & 7;
-	uint32_t baudrate = 1;//(PINA >> 3) & 3;
+	uint32_t stepnum = PINA & 7;
+	uint32_t baudrate = (PINA >> 3) & 3;
 	
 	// stepnum = number of steps per degree * 2
 	switch(stepnum) {
