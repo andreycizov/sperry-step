@@ -30,8 +30,8 @@ void init() {
 	DDRA = 0x80;
 	DDRB = 0x00;
 	DDRC = 0xFF;
-	uint32_t stepnum = PORTA & 7;
-	uint32_t baudrate = (PORTA >> 3) & 3;
+	uint32_t stepnum = 4;//PINA & 7;
+	uint32_t baudrate = 1;//(PINA >> 3) & 3;
 	
 	// stepnum = number of steps per degree * 2
 	switch(stepnum) {
@@ -45,7 +45,7 @@ void init() {
 		default: stepnum =  12; break; //   6 default
 	}
 	steps_per_degr = stepnum;
-	steps_per_circle = stepnum * DEGR_MAX;
+	steps_per_circle = stepnum * DEGR_MAX >> 1;
 	
 	switch(baudrate) {
 		case 1: baudrate =  4800; break;
@@ -91,8 +91,17 @@ void global_degr_update(degree next) {
 	int32_t next_steps = degr_to_step(next);
 
 	if(!global_degr_first) {
-		int32_t diff_steps_one = next_steps - global_current_step;
-		int32_t diff_steps_two = steps_per_circle - diff_steps_one;
+		int32_t diff = next_steps - global_current_step;
+		
+		int32_t diff_steps_one = 0;
+		if(diff >= 0) {
+			diff_steps_one = diff;
+			 	
+		} else {
+			diff_steps_one = steps_per_circle + diff;
+		}
+		
+		int32_t diff_steps_two = steps_per_circle - diff_steps_one;		
 
 		int32_t diff_steps = (diff_steps_one < diff_steps_two ? diff_steps_one : - diff_steps_two);
 
@@ -127,6 +136,7 @@ int main(void)
 	}
 	return 0;
  }
+
 
 
 
