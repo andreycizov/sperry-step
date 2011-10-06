@@ -76,7 +76,7 @@ int usart_write(unsigned char *buffer, unsigned int size) {
 }
 
 // blocking write
-void usart_read_block(unsigned char *buffer, int size) {
+void usart_write_block(unsigned char *buffer, int size) {
 	while(size > 0) {
 		int n = usart_write(buffer, size);
 		buffer += n;
