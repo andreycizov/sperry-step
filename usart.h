@@ -38,9 +38,8 @@ ISR(USART_RXC_vect)
 int usart_read(uint8_t *buffer, int size) {
 	ATOMIC_BLOCK(ATOMIC_FORCEON)
   {
-		int n = circular_read(&usart_rx, buffer, size);
+		return circular_read(&usart_rx, buffer, size);
 	}
-	return n;
 }
 // blocking read
 void usart_read_block(uint8_t *to, int count) {
