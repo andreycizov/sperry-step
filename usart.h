@@ -52,3 +52,6 @@ void usart_read_block(uint8_t *to, int count) {
 }
 
 
+ISR(USART_TXC_vect)
+{
+}
