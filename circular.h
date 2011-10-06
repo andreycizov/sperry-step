@@ -32,7 +32,7 @@ unsigned int circular_write(circular *handle, unsigned char *buffer, unsigned in
 	unsigned int next = (handle->w + 1) & handle->mask;
 	while(next != handle->r && n < size) {
 		handle->w = next;
-		handle->b[next] = byte;
+		handle->b[next] = buffer[n];
 		next = (handle->w + 1) & handle->mask;
 		n++;
 	}
