@@ -1,10 +1,14 @@
 #include <util/atomic.h>
+#include "circular.h"
 
-#define USART_INPUT_BUFFER_SIZE 128
-#define USART_INPUT_BUFFER_MASK (USART_INPUT_BUFFER_SIZE-1)
-uint8_t usart_input_buffer[USART_INPUT_BUFFER_SIZE];
-int usart_input_buffer_w = 0;
-int usart_input_buffer_r = 0;
+#define USART_RX_BUFF_SIZE 128
+#define USART_TX_BUFF_SIZE 128
+
+unsigned char usart_rx_buff[USART_RX_BUFF_SIZE];
+unsigned char usart_tx_buff[USART_TX_BUFF_SIZE];
+
+circular usart_rx;
+circular usart_tx;
 
 void usart_init(uint32_t baudrate)
 {
@@ -19,32 +23,22 @@ void usart_init(uint32_t baudrate)
 	UCSRB=(1<<RXEN)|(0<<TXEN)|(1<<RXCIE);
 	//enable global interrupts
 	
+	circular_init(&usart_rx, &usart_rx_buff, USART_RX_BUFF_SIZE);
+	circular_init(&usart_tx, &usart_tx_buff, USART_TX_BUFF_SIZE);
 }
 
 ISR(USART_RXC_vect)
 {
 	uint8_t t = UDR;
 	
-	int next_usart_input_buffer_w = (usart_input_buffer_w + 1) & USART_INPUT_BUFFER_MASK;
-	if(next_usart_input_buffer_w != usart_input_buffer_r) {
-		usart_input_buffer_w = next_usart_input_buffer_w;
-		usart_input_buffer[usart_input_buffer_w] = t;
-	}
-	//UDR=t;
+	circular_write(&usart_rx, &t, 1);
 }
 
 // reads max count bytes to to
-int usart_read(uint8_t *to, int count) {
-	int n = 0;
+int usart_read(uint8_t *buffer, int size) {
 	ATOMIC_BLOCK(ATOMIC_FORCEON)
-   {
-		int next_usart_input_buffer_r = (usart_input_buffer_r + 1) & USART_INPUT_BUFFER_MASK;
-		while(usart_input_buffer_r != usart_input_buffer_w && n < count) {
-			usart_input_buffer_r = next_usart_input_buffer_r;
-			to[n] = usart_input_buffer[usart_input_buffer_r]; //TODO: edit that
-			next_usart_input_buffer_r = (usart_input_buffer_r + 1) & USART_INPUT_BUFFER_MASK;
-			n++;
-		}
+  {
+		int n = circular_read(&usart_rx, buffer, size);
 	}
 	return n;
 }
