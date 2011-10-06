@@ -35,22 +35,51 @@ ISR(USART_RXC_vect)
 }
 
 // reads max count bytes to to
-int usart_read(uint8_t *buffer, int size) {
+int usart_read(unsigned char *buffer, int size) {
+	int n = 0;
 	ATOMIC_BLOCK(ATOMIC_FORCEON)
   {
-		return circular_read(&usart_rx, buffer, size);
+		n = circular_read(&usart_rx, buffer, size);
 	}
+	return n;
 }
 // blocking read
-void usart_read_block(uint8_t *to, int count) {
-	while(count > 0) {
-		int n = usart_read(to, count);
-		to += n;
-		count -= n;
+void usart_read_block(unsigned char *buffer, int size) {
+	while(size > 0) {
+		int n = usart_read(buffer, size);
+		buffer += n;
+		size -= n;
 	}
 }
 
+void usart_transmit() {
+	unsigned char byte;
+	if(circular_read(&usart_tx, &byte, 1))
+		UDR = byte;
+}
 
 ISR(USART_TXC_vect)
 {
+	usart_transmit();
+}
+
+int usart_write(unsigned char *buffer, unsigned int size) {
+	int n = 0;
+	ATOMIC_BLOCK(ATOMIC_FORCEON)
+	{
+		n = circular_write(&usart_tx, buffer, size);
+		if(n && (UCSRA & (1 << TXC))) {
+			usart_transmit();
+		}
+	}
+	return n;
+}
+
+// blocking write
+void usart_read_block(unsigned char *buffer, int size) {
+	while(size > 0) {
+		int n = usart_write(buffer, size);
+		buffer += n;
+		size -= n;
+	}
 }
