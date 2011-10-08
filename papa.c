@@ -5,7 +5,7 @@
 
 #ifndef F_CPU
 //define CPU clock speed if not defined
-#define F_CPU 4000000
+#define F_CPU 11059200
 #endif
 
 #include "degree.h"
@@ -106,8 +106,14 @@ void global_degr_update(degree next) {
 		int32_t diff_steps = (diff_steps_one < diff_steps_two ? diff_steps_one : - diff_steps_two);
 
 		ATOMIC_BLOCK(ATOMIC_FORCEON)
-		{
+		{	
 			motor_dir += diff_steps;
+
+			if(motor_dir > steps_per_circle) {
+				motor_dir -= steps_per_circle;
+			} else if(motor_dir < -steps_per_circle) {
+				motor_dir += steps_per_circle;
+			}
 
 			// Reset the flag.
 			PORTA |= MSG_TIMER_BIT;
