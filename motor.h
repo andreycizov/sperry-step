@@ -14,7 +14,7 @@ void motor_init(uint32_t ocr1a) {
 }
 
 // this thing should be carefully used in other parts of code!!!
-int32_t motor_dir = 0;
+int32_t motor_dir = 1;
 int motor_state = 0;
 
 void motor_next() {
