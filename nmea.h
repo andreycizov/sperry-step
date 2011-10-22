@@ -1,13 +1,26 @@
 #include "degree.h"
 
-#define NMEA_INPUT_BUFFER_SIZE 128
+#define NMEA_INPUT_BUFFER_SIZE 64
+#define NMEA_OUTPUT_BUFFER_SIZE 32
+
+#define NMEA_MSG_MIN_SIZE 12
+#define NMEA_MSG_SIZE(x) (x + NMEA_MSG_MIN_SIZE)
+
+
+#define NMEA_MSG_HEADER_SIZE 5
+#define NMEA_MSG_CHECKSUM_SIZE 2
+
+#define NMEA_MSG_BODY_OFFSET (1 /* msg start */ + NMEA_MSG_HEADER_SIZE + 1 /* comma */)
 
 #define NMEA_SYMBOL_START '$'
 #define NMEA_SYMBOL_CHECKSUM '*'
+#define NMEA_SYMBOL_END2 0x0D
 #define NMEA_SYMBOL_END 0x0A
 
 #define NMEA_SYMBOL_FIELD_SEP ','
 #define NMEA_SYMBOL_POINT_SEP '.'
+
+#define NMEA_SYMBOL_HEADING_TRUE 'T'
 
 #define NMEA_SYMBOL_0 0x30
 #define NMEA_SYMBOL_9 0x39
@@ -17,10 +30,15 @@
 
 #define NMEA_MSG_HDR_SIZE 3
 const char NMEA_MSG_HDR_HDT[] = "HDT";
+const char NMEA_MSG_HDR_HEHDT[] = "HEHDT";
 
 uint8_t nmea_input_buffer[NMEA_INPUT_BUFFER_SIZE];
 int nmea_input_buffer_i = 0;
 int nmea_received_messages = 0;
+
+uint8_t nmea_msg_forward_buffer[NMEA_OUTPUT_BUFFER_SIZE];
+
+uint8_t nmea_checksum(uint8_t *d, int length);
 
 
 int nmea_msg_atoi_size(uint8_t *d, int count) {
@@ -96,23 +114,104 @@ int nmea_msg_hdr_cmp(uint8_t *d, const char *cmp, int count) {
 	return 1;
 }
 
-void nmea_msg_process_hdt(uint8_t *d, int count) {
+typedef struct heading {
+	degree degr;
+	int degr_start;
+	int degr_size;
+	int letter_start;
+	int letter_size;
+} heading;
+
+int nmea_msg_process_heading(uint8_t *d, int count, heading *r) {
 	if(count == 0)
-		return;
+		return 0;
+
+	// process degr field
 
 	int f_degr = nmea_field_process(d, count);
 	if(f_degr == -1)
-		return;
+		return 0;
 
-	degree degr;
-	int degr_size = nmea_msg_ansi_to_degr(d + 1, f_degr, &degr);
+	int degr_size = nmea_msg_ansi_to_degr(d + 1, f_degr, &(r->degr));
 
 	if(degr_size != f_degr)
-		return;
+		return 0;
 
-	global_degr_update(degr);
+	// end process degr field
 
-	int f_true = nmea_field_process(d += count + 1, count -= f_degr + 1);
+	int f_letter = nmea_field_process(d + f_degr + 1, count -= f_degr + 1);
+
+	r->degr_start = 1;
+	r->degr_size = f_degr;
+	r->letter_start = f_degr + 1;
+	r->letter_size = f_letter;
+
+	return 1;
+}
+
+void nmea_msg_process_hdt(uint8_t *d, int count) {
+	heading h;
+	if(nmea_msg_process_heading(d, count, &h)) {
+		global_degr_update(h.degr);
+		nmea_msg_forward_heading(d, &h);
+	}
+}
+
+void nmea_msg_process_ths(uint8_t *d, int count) {
+	heading h;
+	if(nmea_msg_process_heading(d, count, &h)) {
+		nmea_msg_forward_heading(d, &h);
+	}
+}
+
+void nmea_msg_process_hdm(uint8_t *d, int count) {
+	heading h;
+	if(nmea_msg_process_heading(d, count, &h)) {
+		nmea_msg_forward_heading(d, &h);
+	}
+}
+
+// returns the offset where to write the body
+// gets the message size in bytes
+// @args:
+// type-> 5-byte message header;
+// msg-> message buffer
+// size-> message buffer size
+// count-> message body size
+int nmea_msg_prepare_header(uint8_t *msg, uint8_t *type, int size, int count) {
+	if(NMEA_MSG_SIZE(count) < size)
+		return -1;
+	msg[0] = NMEA_SYMBOL_START;
+	memcpy(msg += 1, type, NMEA_MSG_HEADER_SIZE);
+	msg += NMEA_MSG_HEADER_SIZE + size + 1;
+	msg[0] = NMEA_SYMBOL_CHECKSUM;
+	msg += NMEA_MSG_CHECKSUM_SIZE + 1;
+	msg[0] = NMEA_SYMBOL_END2;
+	msg[1] = NMEA_SYMBOL_END;
+	return NMEA_MSG_BODY_OFFSET;
+}
+
+void nmea_msg_prepare_checksum(uint8_t *msg, int size, uint8_t *d, int count) {
+	int offset = NMEA_MSG_BODY_OFFSET + size + 1;
+	nmea_msg_byte_to_hex(nmea_checksum(d, count), msg + offset);
+}
+
+void nmea_msg_forward_heading(uint8_t *d, heading *h) {
+	int r = nmea_msg_prepare_header(
+		nmea_msg_forward_buffer, 
+		NMEA_MSG_HDR_HEHDT,
+		NMEA_OUTPUT_BUFFER_SIZE,
+		h->degr_size + 1 + 1);
+
+	if(r < 0)
+		return; // too big message, cannot send it!!
+	uint8_t *out = &nmea_msg_forward_buffer + r;
+	memcpy(out, d + h->degr_start, h->degr_size);
+	out += h->degr_size; 
+	out[0] = NMEA_SYMBOL_FIELD_SEP;
+    out[1] = NMEA_SYMBOL_HEADING_TRUE;
+
+	usart_write(out, NMEA_MSG_SIZE(h->degr_size + 1 + 1));
 }
 
 int16_t nmea_msg_hex_to_byte(uint8_t *d) {
@@ -131,6 +230,10 @@ int16_t nmea_msg_hex_to_byte(uint8_t *d) {
 	return (int16_t)r;
 }
 
+void nmea_msg_byte_to_hex(uint8_t cs, uint8_t *d) {
+	d[0] = '0';
+	d[1] = '1';
+}
 
 
 uint8_t nmea_checksum(uint8_t *d, int length) {

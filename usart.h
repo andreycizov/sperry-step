@@ -23,8 +23,8 @@ void usart_init(uint32_t baudrate)
 	UCSRB=(1<<RXEN)|(0<<TXEN)|(1<<RXCIE);
 	//enable global interrupts
 	
-	circular_init(&usart_rx, &usart_rx_buff, USART_RX_BUFF_SIZE);
-	circular_init(&usart_tx, &usart_tx_buff, USART_TX_BUFF_SIZE);
+	circular_init(&usart_rx, usart_rx_buff, USART_RX_BUFF_SIZE);
+	circular_init(&usart_tx, usart_tx_buff, USART_TX_BUFF_SIZE);
 }
 
 ISR(USART_RXC_vect)
