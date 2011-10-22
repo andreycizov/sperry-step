@@ -109,9 +109,9 @@ void global_degr_update(degree next) {
 		{	
 			motor_dir += diff_steps;
 
-			if(motor_dir > steps_per_circle) {
+			if(motor_dir > (int32_t)steps_per_circle) {
 				motor_dir -= steps_per_circle;
-			} else if(motor_dir < -steps_per_circle) {
+			} else if(motor_dir < -(int32_t)steps_per_circle) {
 				motor_dir += steps_per_circle;
 			}
 
