@@ -20,8 +20,10 @@ void usart_init(uint32_t baudrate)
 	UCSRC=(1<<URSEL)|(0<<UMSEL)|(0<<UPM1)|(0<<UPM0)|
 		(0<<USBS)|(0<<UCSZ2)|(1<<UCSZ1)|(1<<UCSZ0);	
 	//Enable Transmitter and Receiver and Interrupt on receive complete
-	UCSRB=(1<<RXEN)|(0<<TXEN)|(1<<RXCIE);
+	UCSRB=(1<<RXEN)|(1<<TXEN)|(1<<TXCIE)|(1<<RXCIE);
 	//enable global interrupts
+
+	//UCSRA &= ~(1 << TXC);
 	
 	circular_init(&usart_rx, usart_rx_buff, USART_RX_BUFF_SIZE);
 	circular_init(&usart_tx, usart_tx_buff, USART_TX_BUFF_SIZE);
@@ -38,7 +40,7 @@ ISR(USART_RXC_vect)
 int usart_read(unsigned char *buffer, int size) {
 	int n = 0;
 	ATOMIC_BLOCK(ATOMIC_FORCEON)
-  {
+    {
 		n = circular_read(&usart_rx, buffer, size);
 	}
 	return n;
@@ -54,12 +56,15 @@ void usart_read_block(unsigned char *buffer, int size) {
 
 void usart_transmit() {
 	unsigned char byte;
-	if(circular_read(&usart_tx, &byte, 1))
+	if(circular_read(&usart_tx, &byte, 1)) {
 		UDR = byte;
+	} /*else {
+		UCSRA |= (1 << TXC);	
+	}*/
 }
 
 ISR(USART_TXC_vect)
-{
+{	
 	usart_transmit();
 }
 
@@ -68,7 +73,7 @@ int usart_write(unsigned char *buffer, unsigned int size) {
 	ATOMIC_BLOCK(ATOMIC_FORCEON)
 	{
 		n = circular_write(&usart_tx, buffer, size);
-		if(n && (UCSRA & (1 << TXC))) {
+		if(n > 0 && (UCSRA & (1 << UDRIE))) {
 			usart_transmit();
 		}
 	}

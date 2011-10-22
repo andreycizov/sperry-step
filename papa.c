@@ -32,6 +32,7 @@ void init() {
 	DDRC = 0xFF;
 	uint32_t stepnum = PINA & 7;
 	uint32_t baudrate = (PINA >> 3) & 3;
+	nmea_require_checksum = (PINA >> 5) & 1;
 	
 	// stepnum = number of steps per degree * 2
 	switch(stepnum) {

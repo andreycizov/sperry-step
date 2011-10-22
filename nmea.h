@@ -1,7 +1,7 @@
 #include "degree.h"
 
 #define NMEA_INPUT_BUFFER_SIZE 64
-#define NMEA_OUTPUT_BUFFER_SIZE 32
+#define NMEA_OUTPUT_BUFFER_SIZE 48
 
 #define NMEA_MSG_MIN_SIZE 12
 #define NMEA_MSG_SIZE(x) (x + NMEA_MSG_MIN_SIZE)
@@ -30,11 +30,16 @@
 
 #define NMEA_MSG_HDR_SIZE 3
 const char NMEA_MSG_HDR_HDT[] = "HDT";
+const char NMEA_MSG_HDR_THS[] = "THS";
+const char NMEA_MSG_HDR_HDM[] = "HDM";
+
 const char NMEA_MSG_HDR_HEHDT[] = "HEHDT";
 
 uint8_t nmea_input_buffer[NMEA_INPUT_BUFFER_SIZE];
 int nmea_input_buffer_i = 0;
 int nmea_received_messages = 0;
+
+int nmea_require_checksum = 1;
 
 uint8_t nmea_msg_forward_buffer[NMEA_OUTPUT_BUFFER_SIZE];
 
@@ -179,11 +184,12 @@ void nmea_msg_process_hdm(uint8_t *d, int count) {
 // size-> message buffer size
 // count-> message body size
 int nmea_msg_prepare_header(uint8_t *msg, uint8_t *type, int size, int count) {
-	if(NMEA_MSG_SIZE(count) < size)
+	if(NMEA_MSG_SIZE(count) > size)
 		return -1;
 	msg[0] = NMEA_SYMBOL_START;
 	memcpy(msg += 1, type, NMEA_MSG_HEADER_SIZE);
-	msg += NMEA_MSG_HEADER_SIZE + size + 1;
+	msg[NMEA_MSG_HEADER_SIZE] = NMEA_SYMBOL_FIELD_SEP;
+	msg += NMEA_MSG_HEADER_SIZE + count + 1;
 	msg[0] = NMEA_SYMBOL_CHECKSUM;
 	msg += NMEA_MSG_CHECKSUM_SIZE + 1;
 	msg[0] = NMEA_SYMBOL_END2;
@@ -191,27 +197,69 @@ int nmea_msg_prepare_header(uint8_t *msg, uint8_t *type, int size, int count) {
 	return NMEA_MSG_BODY_OFFSET;
 }
 
-void nmea_msg_prepare_checksum(uint8_t *msg, int size, uint8_t *d, int count) {
-	int offset = NMEA_MSG_BODY_OFFSET + size + 1;
-	nmea_msg_byte_to_hex(nmea_checksum(d, count), msg + offset);
+void nmea_msg_prepare_checksum(uint8_t *msg, int count) {
+	int offset = NMEA_MSG_BODY_OFFSET + count + 1;
+	nmea_msg_byte_to_hex(nmea_checksum(msg + 1, 
+		NMEA_MSG_HEADER_SIZE + 1 + count), msg + offset);
+}
+
+typedef struct nmea_msg {
+	uint8_t checksum;
+} nmea_msg;
+
+void nmea_msg_tx_body(nmea_msg *h, uint8_t *body, int count) {
+	h->checksum ^= nmea_checksum(body, count);
+	usart_write(body, count);
+}
+
+void nmea_msg_tx_start(nmea_msg *h, uint8_t *header) {
+	h->checksum = 0;	
+	uint8_t start[7];
+	start[0] = NMEA_SYMBOL_START;
+	usart_write(start, 1);
+	memcpy(start + 1, header, NMEA_MSG_HEADER_SIZE);
+	start[6] = NMEA_SYMBOL_FIELD_SEP;
+	nmea_msg_tx_body(h, start + 1, NMEA_MSG_HEADER_SIZE + 1);
+}
+
+void nmea_msg_tx_end(nmea_msg *h) {
+	uint8_t end[5];
+	end[0] = NMEA_SYMBOL_CHECKSUM;
+	nmea_msg_byte_to_hex(h->checksum, end + 1);
+	end[3] = NMEA_SYMBOL_END2;
+	end[4] = NMEA_SYMBOL_END;
+	usart_write(end, sizeof(end));
 }
 
 void nmea_msg_forward_heading(uint8_t *d, heading *h) {
-	int r = nmea_msg_prepare_header(
-		nmea_msg_forward_buffer, 
-		NMEA_MSG_HDR_HEHDT,
-		NMEA_OUTPUT_BUFFER_SIZE,
-		h->degr_size + 1 + 1);
+	nmea_msg msg;
+	nmea_msg_tx_start(&msg, NMEA_MSG_HDR_HEHDT);
+	nmea_msg_tx_body(&msg, d + h->degr_start, h->degr_size);
 
+	uint8_t f_hdg_true[2];
+	f_hdg_true[0] = NMEA_SYMBOL_FIELD_SEP;
+	f_hdg_true[1] = 'T';
+
+	nmea_msg_tx_body(&msg, f_hdg_true, sizeof(f_hdg_true));
+	nmea_msg_tx_end(&msg);
+
+	/*int r = nmea_msg_prepare_header(
+		nmea_msg_forward_buffer, 
+		,
+		NMEA_OUTPUT_BUFFER_SIZE,
+		h->degr_size + 2);
+	
 	if(r < 0)
 		return; // too big message, cannot send it!!
-	uint8_t *out = &nmea_msg_forward_buffer + r;
+
+	UDR = 's';
+	uint8_t *out = nmea_msg_forward_buffer + r;
 	memcpy(out, d + h->degr_start, h->degr_size);
 	out += h->degr_size; 
 	out[0] = NMEA_SYMBOL_FIELD_SEP;
     out[1] = NMEA_SYMBOL_HEADING_TRUE;
-
-	usart_write(out, NMEA_MSG_SIZE(h->degr_size + 1 + 1));
+	nmea_msg_prepare_checksum(nmea_msg_forward_buffer, h->degr_size + 2);
+	usart_write(nmea_msg_forward_buffer, NMEA_MSG_SIZE(h->degr_size + 2));*/
 }
 
 int16_t nmea_msg_hex_to_byte(uint8_t *d) {
@@ -231,8 +279,15 @@ int16_t nmea_msg_hex_to_byte(uint8_t *d) {
 }
 
 void nmea_msg_byte_to_hex(uint8_t cs, uint8_t *d) {
-	d[0] = '0';
-	d[1] = '1';
+	for(int i = 4; i >= 0; i -= 4) {
+		unsigned int val = (cs >> i) & 0x0F;
+		if(val < 10) {
+			d[0] = NMEA_SYMBOL_0 + val;
+		} else {
+			d[0] = NMEA_SYMBOL_A + val - 10;
+		}
+		d++;
+	}
 }
 
 
@@ -262,8 +317,15 @@ void nmea_msg_process(uint8_t *d, int count) {
 	uint8_t *body = d + 5;
 	int body_size = count - 5;
 
-	if(nmea_msg_hdr_cmp(hdr, NMEA_MSG_HDR_HDT, NMEA_MSG_HDR_SIZE))
+	if(nmea_msg_hdr_cmp(hdr, NMEA_MSG_HDR_HDT, NMEA_MSG_HDR_SIZE)) {
 		nmea_msg_process_hdt(body, body_size);
+	}
+	else if(nmea_msg_hdr_cmp(hdr, NMEA_MSG_HDR_THS, NMEA_MSG_HDR_SIZE)) {
+		nmea_msg_process_ths(body, body_size);
+	}
+	else if(nmea_msg_hdr_cmp(hdr, NMEA_MSG_HDR_HDM, NMEA_MSG_HDR_SIZE)) {
+		nmea_msg_process_hdm(body, body_size);
+	}
 }
 
 int nmea_process(uint8_t *d, int count) {
@@ -280,22 +342,31 @@ int nmea_process(uint8_t *d, int count) {
 		int start = nmea_msg_symbol(NMEA_SYMBOL_START, d, end);
 		while(1) {
 			// Check whole datagram length here
-			if( start == -1 || end - start < 10 )
+			int msg_max = 10;
+
+			if(!nmea_require_checksum) 
+				msg_max -= 3;
+
+			if( start == -1 || end - start < msg_max )
 				break;
 			d += start + 1;
 			end -= start + 1;
+			
+			int checksum = end;
+			if( nmea_require_checksum ) {
+				checksum = nmea_msg_symbol(NMEA_SYMBOL_CHECKSUM, d, end);
 
-			int checksum = nmea_msg_symbol(NMEA_SYMBOL_CHECKSUM, d, end);
+				// Difference between checksum and message end is 4 bytes.
+				// Message body length also cannot be lower than 5 bytes,
+				// it's length is equal to checksum index
+				if( checksum == -1 || end - checksum != 4 || checksum < 5 )
+					break;
 
-			// Difference between checksum and message end is 4 bytes.
-			// Message body length also cannot be lower than 5 bytes,
-			// it's length is equal to checksum index
-			if( checksum == -1 || end - checksum != 4 || checksum < 5 )
-				break;
-
-			// Checksum checking
-			if( ((int16_t)nmea_checksum(d, checksum)) != nmea_msg_hex_to_byte(d+checksum+1) )
-				break;
+				// Checksum checking
+			
+				if( ((int16_t)nmea_checksum(d, checksum)) != nmea_msg_hex_to_byte(d+checksum+1) )
+					break;
+			}
 
 			// The message is OK, receive it.
 			nmea_received_messages++;
