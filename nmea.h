@@ -165,6 +165,7 @@ void nmea_msg_process_hdt(uint8_t *d, int count) {
 void nmea_msg_process_ths(uint8_t *d, int count) {
 	heading h;
 	if(nmea_msg_process_heading(d, count, &h)) {
+		global_degr_update(h.degr);
 		nmea_msg_forward_heading(d, &h);
 	}
 }
@@ -172,6 +173,7 @@ void nmea_msg_process_ths(uint8_t *d, int count) {
 void nmea_msg_process_hdm(uint8_t *d, int count) {
 	heading h;
 	if(nmea_msg_process_heading(d, count, &h)) {
+		global_degr_update(h.degr);
 		nmea_msg_forward_heading(d, &h);
 	}
 }
