@@ -23,8 +23,27 @@
 #define MSG_TIMER_CTC F_CPU/MSG_TIMER_PRESCALER
 #define MSG_TIMER_BIT 128
 
+#define MSG_BUFFER_SIZE (4)
+#define MSG_CURRENT_STEP_STR_SIZE (8)
+
 int msg_timer_ctr = 0;
 int msg_timer_max = 0;
+// no message received flag
+int msg_timer_flag = 0;
+
+uint16_t msg_timer_out_ctr = 0;
+// defaults to message per one second
+uint16_t msg_timer_out_max = 1;
+
+// we did not receive any messages before
+int global_degr_first = 1;
+
+// current step in the motor epsilons
+int32_t global_current_step;
+// current step as as string length (optimization)
+int global_current_step_str_size = 0;
+// current step buffer
+uint8_t global_current_step_str[MSG_CURRENT_STEP_STR_SIZE];
 
 void init() {
 	DDRA = 0x80;
@@ -33,6 +52,8 @@ void init() {
 	uint32_t stepnum = PINA & 7;
 	uint32_t baudrate = (PINA >> 3) & 3;
 	nmea_require_checksum = (PINA >> 5) & 1;
+
+	msg_timer_out_max = ((PINA >> 6) & 1)? 10 : 1;
 	
 	// stepnum = number of steps per degree * 2
 	switch(stepnum) {
@@ -57,7 +78,7 @@ void init() {
 
 	usart_init(baudrate);
 	motor_init((F_CPU*STEPS_MUL)/STEP_TIMER_PRESCALER/stepnum/STEP_TIMER_DEGR_PER_SECOND);
-	msg_timer_init(F_CPU/MSG_TIMER_PRESCALER*MSG_TIMER_SECONDS);
+	msg_timer_init(F_CPU/MSG_TIMER_PRESCALER);
 
 	// Enable no-message flag;
 	PORTA |= MSG_TIMER_BIT;
@@ -69,24 +90,32 @@ void init() {
 ISR(TIMER0_COMP_vect)
 {
 	msg_timer_ctr++;
+	if(msg_timer_out_ctr > msg_timer_out_max) {
+		msg_timer_out_ctr = 0;
+		if(msg_timer_flag) {
+			// emit a message
+			nmea_msg_forward_heading(global_current_step_str, 
+				global_current_step_str_size);
+		}
+	}
+
 	if(msg_timer_ctr > msg_timer_max) {
 		PORTA &= (~MSG_TIMER_BIT);
 		msg_timer_ctr = 0;
+		msg_timer_flag = 0;
 	}
 }
 
 void msg_timer_init(uint32_t ocr0) {
-	msg_timer_max = ocr0 / 255;
+	msg_timer_max = ocr0 * MSG_TIMER_SECONDS / 255;
+	msg_timer_out_max = ocr0 * msg_timer_out_max / 255;
 	OCR0 = 255;
 	TIMSK |= (1 << OCIE0);
 	TCCR0 |= ((1 << CS00) | (0 << CS01) | (1 << CS02)); // Start timer at Fcpu/64
 }
 
 
-int global_degr_first = 1;
 
-degree global_degr;
-int32_t global_current_step;
 
 void global_degr_update(degree next) {
 	int32_t next_steps = degr_to_step(next);
@@ -119,6 +148,7 @@ void global_degr_update(degree next) {
 			// Reset the flag.
 			PORTA |= MSG_TIMER_BIT;
 			msg_timer_ctr = 0;
+			msg_timer_flag = 1;
 		}
 	} else {
 		global_degr_first = 0;
@@ -127,8 +157,15 @@ void global_degr_update(degree next) {
 	global_current_step = next_steps;
 }
 
+void global_degr_str_update(uint8_t *field, int length) {
+	// cut off the unneeded precision
+	int i = 0;
+	for(; i < length && i < MSG_CURRENT_STEP_STR_SIZE; i++) {
+		global_current_step_str[i] = field[i];
+	}
+	global_current_step_str_size = i;
+}
 
-#define MSG_BUFFER_SIZE (16)
 uint8_t msg_buffer[MSG_BUFFER_SIZE];
 
 int main(void)

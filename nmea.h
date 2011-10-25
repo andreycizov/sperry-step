@@ -127,7 +127,7 @@ typedef struct heading {
 	int letter_size;
 } heading;
 
-int nmea_msg_process_heading(uint8_t *d, int count, heading *r) {
+int nmea_msg_process_heading_degree(uint8_t *d, int count, heading *r) {
 	if(count == 0)
 		return 0;
 
@@ -154,28 +154,25 @@ int nmea_msg_process_heading(uint8_t *d, int count, heading *r) {
 	return 1;
 }
 
-void nmea_msg_process_hdt(uint8_t *d, int count) {
+void nmea_msg_process_heading(uint8_t *d, int count) {
 	heading h;
-	if(nmea_msg_process_heading(d, count, &h)) {
+	if(nmea_msg_process_heading_degree(d, count, &h)) {
 		global_degr_update(h.degr);
-		nmea_msg_forward_heading(d, &h);
+		global_degr_str_update(d + h.degr_start, h.degr_size);
+		//nmea_msg_forward_heading(d, &h);
 	}
+}
+
+void nmea_msg_process_hdt(uint8_t *d, int count) {
+	nmea_msg_process_heading(d, count);
 }
 
 void nmea_msg_process_ths(uint8_t *d, int count) {
-	heading h;
-	if(nmea_msg_process_heading(d, count, &h)) {
-		global_degr_update(h.degr);
-		nmea_msg_forward_heading(d, &h);
-	}
+	nmea_msg_process_heading(d, count);
 }
 
 void nmea_msg_process_hdm(uint8_t *d, int count) {
-	heading h;
-	if(nmea_msg_process_heading(d, count, &h)) {
-		global_degr_update(h.degr);
-		nmea_msg_forward_heading(d, &h);
-	}
+	nmea_msg_process_heading(d, count);
 }
 
 // returns the offset where to write the body
@@ -185,7 +182,7 @@ void nmea_msg_process_hdm(uint8_t *d, int count) {
 // msg-> message buffer
 // size-> message buffer size
 // count-> message body size
-int nmea_msg_prepare_header(uint8_t *msg, uint8_t *type, int size, int count) {
+/*int nmea_msg_prepare_header(uint8_t *msg, uint8_t *type, int size, int count) {
 	if(NMEA_MSG_SIZE(count) > size)
 		return -1;
 	msg[0] = NMEA_SYMBOL_START;
@@ -197,13 +194,13 @@ int nmea_msg_prepare_header(uint8_t *msg, uint8_t *type, int size, int count) {
 	msg[0] = NMEA_SYMBOL_END2;
 	msg[1] = NMEA_SYMBOL_END;
 	return NMEA_MSG_BODY_OFFSET;
-}
+}*/
 
-void nmea_msg_prepare_checksum(uint8_t *msg, int count) {
+/*void nmea_msg_prepare_checksum(uint8_t *msg, int count) {
 	int offset = NMEA_MSG_BODY_OFFSET + count + 1;
 	nmea_msg_byte_to_hex(nmea_checksum(msg + 1, 
 		NMEA_MSG_HEADER_SIZE + 1 + count), msg + offset);
-}
+}*/
 
 typedef struct nmea_msg {
 	uint8_t checksum;
@@ -233,10 +230,10 @@ void nmea_msg_tx_end(nmea_msg *h) {
 	usart_write(end, sizeof(end));
 }
 
-void nmea_msg_forward_heading(uint8_t *d, heading *h) {
+void nmea_msg_forward_heading(uint8_t *heading, int length) {
 	nmea_msg msg;
 	nmea_msg_tx_start(&msg, NMEA_MSG_HDR_HEHDT);
-	nmea_msg_tx_body(&msg, d + h->degr_start, h->degr_size);
+	nmea_msg_tx_body(&msg, heading, length);
 
 	uint8_t f_hdg_true[2];
 	f_hdg_true[0] = NMEA_SYMBOL_FIELD_SEP;
