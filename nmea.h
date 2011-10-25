@@ -175,33 +175,6 @@ void nmea_msg_process_hdm(uint8_t *d, int count) {
 	nmea_msg_process_heading(d, count);
 }
 
-// returns the offset where to write the body
-// gets the message size in bytes
-// @args:
-// type-> 5-byte message header;
-// msg-> message buffer
-// size-> message buffer size
-// count-> message body size
-/*int nmea_msg_prepare_header(uint8_t *msg, uint8_t *type, int size, int count) {
-	if(NMEA_MSG_SIZE(count) > size)
-		return -1;
-	msg[0] = NMEA_SYMBOL_START;
-	memcpy(msg += 1, type, NMEA_MSG_HEADER_SIZE);
-	msg[NMEA_MSG_HEADER_SIZE] = NMEA_SYMBOL_FIELD_SEP;
-	msg += NMEA_MSG_HEADER_SIZE + count + 1;
-	msg[0] = NMEA_SYMBOL_CHECKSUM;
-	msg += NMEA_MSG_CHECKSUM_SIZE + 1;
-	msg[0] = NMEA_SYMBOL_END2;
-	msg[1] = NMEA_SYMBOL_END;
-	return NMEA_MSG_BODY_OFFSET;
-}*/
-
-/*void nmea_msg_prepare_checksum(uint8_t *msg, int count) {
-	int offset = NMEA_MSG_BODY_OFFSET + count + 1;
-	nmea_msg_byte_to_hex(nmea_checksum(msg + 1, 
-		NMEA_MSG_HEADER_SIZE + 1 + count), msg + offset);
-}*/
-
 typedef struct nmea_msg {
 	uint8_t checksum;
 } nmea_msg;
@@ -241,24 +214,6 @@ void nmea_msg_forward_heading(uint8_t *heading, int length) {
 
 	nmea_msg_tx_body(&msg, f_hdg_true, sizeof(f_hdg_true));
 	nmea_msg_tx_end(&msg);
-
-	/*int r = nmea_msg_prepare_header(
-		nmea_msg_forward_buffer, 
-		,
-		NMEA_OUTPUT_BUFFER_SIZE,
-		h->degr_size + 2);
-	
-	if(r < 0)
-		return; // too big message, cannot send it!!
-
-	UDR = 's';
-	uint8_t *out = nmea_msg_forward_buffer + r;
-	memcpy(out, d + h->degr_start, h->degr_size);
-	out += h->degr_size; 
-	out[0] = NMEA_SYMBOL_FIELD_SEP;
-    out[1] = NMEA_SYMBOL_HEADING_TRUE;
-	nmea_msg_prepare_checksum(nmea_msg_forward_buffer, h->degr_size + 2);
-	usart_write(nmea_msg_forward_buffer, NMEA_MSG_SIZE(h->degr_size + 2));*/
 }
 
 int16_t nmea_msg_hex_to_byte(uint8_t *d) {
