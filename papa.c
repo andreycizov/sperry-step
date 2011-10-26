@@ -90,6 +90,7 @@ void init() {
 ISR(TIMER0_COMP_vect)
 {
 	msg_timer_ctr++;
+	msg_timer_out_ctr++;
 	if(msg_timer_out_ctr > msg_timer_out_max) {
 		msg_timer_out_ctr = 0;
 		if(msg_timer_flag) {
