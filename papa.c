@@ -23,6 +23,11 @@
 #define MSG_TIMER_CTC F_CPU/MSG_TIMER_PRESCALER
 #define MSG_TIMER_BIT 128
 
+/* defines for msg ignore state */
+#define MSG_IGNORE_PORT (PORTA >> 8)
+const char MSG_IGNORE_STATE_STR[] = "0.0";
+degree MSG_IGNORE_STATE_DEGREE = {0,0,10};
+
 #define MSG_BUFFER_SIZE (4)
 #define MSG_CURRENT_STEP_STR_SIZE (8)
 
@@ -37,6 +42,9 @@ uint16_t msg_timer_out_max = 1;
 
 // we did not receive any messages before
 int global_degr_first = 1;
+
+// we're in the state of ignoring input
+int global_msg_ignore = 0;
 
 // current step in the motor epsilons
 int32_t global_current_step;
@@ -175,8 +183,16 @@ int main(void)
 	
 	while(1){	
 		int l = usart_read(msg_buffer, MSG_BUFFER_SIZE);
-		if(l > 0) {
+		if(l > 0 && !global_msg_ignore) {
 			nmea_read(msg_buffer, l);
+		}
+
+		if(global_msg_ignore != MSG_IGNORE_PORT) {
+			global_msg_ignore = MSG_IGNORE_PORT;
+			if(global_msg_ignore = 1) {
+				global_degr_update(MSG_IGNORE_STATE_DEGREE);
+				global_degr_str_update(MSG_IGNORE_STATE_STR, sizeof(MSG_IGNORE_STATE_STR));
+			}
 		}
 	}
 	return 0;
