@@ -46,14 +46,14 @@ int global_current_step_str_size = 0;
 uint8_t global_current_step_str[MSG_CURRENT_STEP_STR_SIZE];
 
 void init() {
-	DDRA = 0x80;
+	DDRA = 0x00;
 	DDRB = 0x00;
 	DDRC = 0xFF;
 	uint32_t stepnum = PINA & 7;
 	uint32_t baudrate = (PINA >> 3) & 3;
 	nmea_require_checksum = (PINA >> 5) & 1;
 
-	msg_timer_out_max = ((PINA >> 6) & 1)? 10 : 1;
+	msg_timer_out_max = ((PINA >> 6) & 1)? 1 : 10;
 	
 	// stepnum = number of steps per degree * 2
 	switch(stepnum) {
@@ -81,7 +81,7 @@ void init() {
 	msg_timer_init(F_CPU/MSG_TIMER_PRESCALER);
 
 	// Enable no-message flag;
-	PORTA |= MSG_TIMER_BIT;
+	PORTC |= MSG_TIMER_BIT;
 
 	sei(); //  Enable global interrupts
 	set_sleep_mode(SLEEP_MODE_IDLE);
@@ -101,7 +101,7 @@ ISR(TIMER0_COMP_vect)
 	}
 
 	if(msg_timer_ctr > msg_timer_max) {
-		PORTA &= (~MSG_TIMER_BIT);
+		PORTC &= (~MSG_TIMER_BIT);
 		msg_timer_ctr = 0;
 		msg_timer_flag = 0;
 	}
@@ -109,7 +109,7 @@ ISR(TIMER0_COMP_vect)
 
 void msg_timer_init(uint32_t ocr0) {
 	msg_timer_max = ocr0 * MSG_TIMER_SECONDS / 255;
-	msg_timer_out_max = ocr0 * msg_timer_out_max / 255;
+	msg_timer_out_max = (uint16_t)(((uint32_t)((uint32_t)ocr0 * msg_timer_out_max) / (uint32_t)2550));
 	OCR0 = 255;
 	TIMSK |= (1 << OCIE0);
 	TCCR0 |= ((1 << CS00) | (0 << CS01) | (1 << CS02)); // Start timer at Fcpu/64
@@ -147,7 +147,7 @@ void global_degr_update(degree next) {
 			}
 
 			// Reset the flag.
-			PORTA |= MSG_TIMER_BIT;
+			PORTC |= MSG_TIMER_BIT;
 			msg_timer_ctr = 0;
 			msg_timer_flag = 1;
 		}
