@@ -24,7 +24,7 @@
 #define MSG_TIMER_BIT 128
 
 /* defines for msg ignore state */
-#define MSG_IGNORE_PORT (PORTA >> 8)
+#define MSG_IGNORE_PORT (PINB & 0x01)
 const char MSG_IGNORE_STATE_STR[] = "0.0";
 degree MSG_IGNORE_STATE_DEGREE = {0,0,10};
 
