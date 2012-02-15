@@ -99,9 +99,9 @@ ISR(TIMER0_COMP_vect)
 {
 	msg_timer_ctr++;
 	msg_timer_out_ctr++;
-	if(msg_timer_out_ctr > msg_timer_out_max && 0 != global_degr_first) {
+	if(msg_timer_out_ctr > msg_timer_out_max) {
 		msg_timer_out_ctr = 0;
-		if(msg_timer_flag) {
+		if(msg_timer_flag && 1 != global_degr_first) {
 			// emit a message
 			nmea_msg_forward_heading(global_current_step_str, 
 				global_current_step_str_size);
