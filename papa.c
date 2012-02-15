@@ -99,7 +99,7 @@ ISR(TIMER0_COMP_vect)
 {
 	msg_timer_ctr++;
 	msg_timer_out_ctr++;
-	if(msg_timer_out_ctr > msg_timer_out_max) {
+	if(msg_timer_out_ctr > msg_timer_out_max && 0 != global_degr_first) {
 		msg_timer_out_ctr = 0;
 		if(msg_timer_flag) {
 			// emit a message
@@ -183,13 +183,13 @@ int main(void)
 	
 	while(1){	
 		int l = usart_read(msg_buffer, MSG_BUFFER_SIZE);
-		if(l > 0 && !global_msg_ignore) {
+		if(l > 0 && !0 == global_msg_ignore) {
 			nmea_read(msg_buffer, l);
 		}
 
 		if(global_msg_ignore != MSG_IGNORE_PORT) {
 			global_msg_ignore = MSG_IGNORE_PORT;
-			if(global_msg_ignore = 1) {
+			if(1 == global_msg_ignore) {
 				global_degr_update(MSG_IGNORE_STATE_DEGREE);
 				global_degr_str_update(MSG_IGNORE_STATE_STR, sizeof(MSG_IGNORE_STATE_STR));
 			}
