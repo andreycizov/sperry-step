@@ -24,7 +24,7 @@ void motor_init(uint32_t ocr1a) {
 	// @TODO: change this part based on the prescaler value in main.c
 	TCCR1B |= ((1 << CS10) | (1 << CS11) | (0 << CS12)); // Start timer at Fcpu/64
 
-	motor_type = PORTA & 128;
+	motor_type = PINA >> 7;
 
 	MOTOR_PORT &= (~MOTOR_DRIVER_PINS);
 }

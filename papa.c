@@ -24,7 +24,7 @@
 #define MSG_TIMER_BIT 128
 
 /* defines for msg ignore state */
-#define MSG_IGNORE_PORT (PINB & 0x01)
+#define MSG_IGNORE_PORT (PINB & 1)
 const char MSG_IGNORE_STATE_STR[] = "0.0";
 degree MSG_IGNORE_STATE_DEGREE = {0,0,10};
 
@@ -183,7 +183,7 @@ int main(void)
 	
 	while(1){	
 		int l = usart_read(msg_buffer, MSG_BUFFER_SIZE);
-		if(l > 0 && !0 == global_msg_ignore) {
+		if(l > 0 && 0 == global_msg_ignore) {
 			nmea_read(msg_buffer, l);
 		}
 
