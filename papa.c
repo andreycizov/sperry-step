@@ -3,6 +3,7 @@
 #include <avr/sleep.h>
 #include <util/atomic.h>
 
+
 #ifndef F_CPU
 //define CPU clock speed if not defined
 #define F_CPU 11059200
@@ -12,6 +13,7 @@
 #include "motor.h"
 #include "nmea.h"
 #include "usart.h"
+#include "delay.h"
 
 #define STEPS_MUL 2
 
@@ -57,6 +59,11 @@ void init() {
 	DDRA = 0x00;
 	DDRB = 0x00;
 	DDRC = 0xFF;
+    PORTA=255;
+	PORTB=255;
+    _delay_loop_2 (50);  // delay 50 mc
+
+
 	uint32_t stepnum = PINA & 7;
 	uint32_t baudrate = (PINA >> 3) & 3;
 	nmea_require_checksum = (PINA >> 5) & 1;
@@ -70,7 +77,7 @@ void init() {
 		case 3: stepnum  =   8; break; //   4
 		case 4: stepnum  =  12; break; //   6
 		case 5: stepnum  =  20; break; //  10
-		case 6: stepnum  = 384; break; // 192
+		case 6: stepnum  =  48; break; //  24
 		case 7: stepnum  =  96; break; //  48
 		default: stepnum =  12; break; //   6 default
 	}
