@@ -61,7 +61,7 @@ void init() {
 	DDRB = 0x00;
 	DDRC = 0xFF;
     PORTA=255;
-	PORTB=255;
+	PORTB=254;
     _delay_loop_2 (50);  // delay 50 mc
 
 
