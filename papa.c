@@ -60,9 +60,9 @@ void init() {
 	DDRA = 0x00;
 	DDRB = 0x00;
 	DDRC = 0xFF;
-    PORTA=255;
+                PORTA=255;
 	PORTB=254;
-    _delay_loop_2 (50);  // delay 50 mc
+                _delay_loop_2 (50);  // delay 50 mc
 
 
 	uint32_t stepnum = PINA & 7;
