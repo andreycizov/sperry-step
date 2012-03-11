@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <avr/wdt.h>
 #include <util/atomic.h>
 
 
@@ -98,6 +99,9 @@ void init() {
 	// Enable no-message flag;
 	PORTC |= MSG_TIMER_BIT;
 
+	wdt_reset(); 
+	wdt_enable(WDTO_60MS);
+	
 	sei(); //  Enable global interrupts
 	set_sleep_mode(SLEEP_MODE_IDLE);
 }
@@ -201,6 +205,7 @@ int main(void)
 				global_degr_str_update(MSG_IGNORE_STATE_STR, sizeof(MSG_IGNORE_STATE_STR));
 			}
 		}
+		wdt_reset(); 
 	}
 	return 0;
  }
