@@ -100,7 +100,7 @@ void init() {
 	PORTC |= MSG_TIMER_BIT;
 
 	wdt_reset(); 
-	wdt_enable(WDTO_1S);
+	wdt_enable(WDTO_60MS);
 	
 	sei(); //  Enable global interrupts
 	set_sleep_mode(SLEEP_MODE_IDLE);
