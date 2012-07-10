@@ -19,10 +19,10 @@
 #define STEPS_MUL 2
 
 #define STEP_TIMER_PRESCALER 64
-#define STEP_TIMER_DEGR_PER_SECOND 5
+#define STEP_TIMER_DEGR_PER_SECOND 3
 
 #define MSG_TIMER_PRESCALER 1024
-#define MSG_TIMER_SECONDS 2
+#define MSG_TIMER_SECONDS 3
 #define MSG_TIMER_CTC F_CPU/MSG_TIMER_PRESCALER
 #define MSG_TIMER_BIT 128
 
@@ -73,6 +73,7 @@ void init() {
 	
 	// stepnum = number of steps per degree * 2
 	switch(stepnum) {
+	    case 0: stepnum  = 800; break; // 400 
 		case 1: stepnum  =   2; break; //   1
 		case 2: stepnum  =   3; break; //   1.5
 		case 3: stepnum  =   8; break; //   4
